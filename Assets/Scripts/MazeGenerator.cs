@@ -101,12 +101,14 @@ public class MazeGenerator : MonoBehaviour
     public void SetMazeWidth(float value)
     {
         width = (int)value;
+        if (width % 2 == 0) width++;
         widthText.text = "Width: " + width;
     }
 
     public void SetMazeHeight(float value)
     {
         height = (int)value;
+        if (height % 2 == 0) height++;
         heightText.text = "Height: " + height;
     }
 
