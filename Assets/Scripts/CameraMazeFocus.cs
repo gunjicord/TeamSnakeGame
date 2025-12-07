@@ -6,6 +6,11 @@ public class CameraMazeFocus : MonoBehaviour
 
     void Start()
     {
+        
+    }
+
+    public void FocusCamera()
+    {
         float posX = ((mazeGen.width - 1) / 2) * mazeGen.cellSize;
         float posY;
         float posZ = ((mazeGen.height - 1) / 2) * mazeGen.cellSize;
