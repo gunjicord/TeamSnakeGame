@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 //maze generator using multi-agent Kruskal's algorithm (Union-Find)
 
@@ -34,7 +35,13 @@ public class MazeGenerator : MonoBehaviour
 
     [Header("Start / Goal Cells (grid coords)")]
     public Vector2Int startCell = new Vector2Int(1, 1);
-    public Vector2Int goalCell;   
+    public Vector2Int goalCell;
+
+    [Header("Settings UI")]
+    public Canvas generationUI;
+    public TextMeshProUGUI widthText;
+    public TextMeshProUGUI heightText;
+    public TextMeshProUGUI difficultyText;
 
     
     private int[,] grid;
@@ -80,12 +87,40 @@ public class MazeGenerator : MonoBehaviour
 
     private void Start()
     {
-        GenerateNewMaze();
+        widthText.text = "Width: " + width;
+        heightText.text = "Height: " + height;
+        difficultyText.text = "Difficulty: " + difficulty;
+        //SetGeneration();
+        //GenerateNewMaze();
     }
 
     #endregion
 
     #region PUBLIC API
+
+    public void SetMazeWidth(float value)
+    {
+        width = (int)value;
+        widthText.text = "Width: " + width;
+    }
+
+    public void SetMazeHeight(float value)
+    {
+        height = (int)value;
+        heightText.text = "Height: " + height;
+    }
+
+    public void SetMazeDifficulty(float value)
+    {
+        difficulty = value;
+        difficultyText.text = "Difficulty: " + difficulty;
+    }
+
+    public void StartGeneration()
+    {
+        generationUI.enabled = false;
+        GenerateNewMaze();
+    }
 
     public void GenerateNewMaze()
     {
