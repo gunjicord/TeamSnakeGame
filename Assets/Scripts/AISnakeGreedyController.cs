@@ -1,13 +1,13 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
-//simple snake for now
+//simple snake with memory
 public class AISnakeGreedyController : MonoBehaviour
 {
     public float moveSpeed = 4f;
     public float stepDelay = 0.3f;
 
     private Vector2Int currentCell;
-    private Vector2Int lastCell;
     private Vector3 targetPosition;
     private bool isMoving = false;
     private float stepTimer = 0f;
@@ -15,40 +15,44 @@ public class AISnakeGreedyController : MonoBehaviour
     private readonly Vector3 heightOffset = new Vector3(0, 0.5f, 0);
 
     private bool initialized = false;
+    private bool reachedGoal = false;
+
+    private HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+    private Stack<Vector2Int> backtrackStack = new Stack<Vector2Int>();
 
     private void Start()
     {
-        
-        //wait for maze to finish gen
         StartCoroutine(WaitForMaze());
     }
 
     private System.Collections.IEnumerator WaitForMaze()
     {
-        //wait until maze isgenerated
-        while (MazeGenerator.Instance.IsGenerating)
+        while (MazeGenerator.Instance == null)
             yield return null;
 
-        //force snake to spawn at maze start
+        while (MazeGenerator.Instance.Grid == null || MazeGenerator.Instance.IsGenerating)
+            yield return null;
+
         currentCell = MazeGenerator.Instance.startCell;
-
-
-        //snap to the correct position
         targetPosition = MazeGenerator.Instance.CellToWorld(currentCell) + heightOffset;
         transform.position = targetPosition;
 
-        lastCell = new Vector2Int(-999, -999);
-        initialized = true;
-    }
+        visited.Clear();
+        backtrackStack.Clear();
+        visited.Add(currentCell);
 
+        initialized = true;
+        reachedGoal = false;
+    }
 
     private void Update()
     {
-        
-        if (!initialized || MazeGenerator.Instance.IsGenerating)
+        if (!initialized || MazeGenerator.Instance == null || MazeGenerator.Instance.IsGenerating)
             return;
 
-        
+        if (reachedGoal)
+            return;
+
         if (isMoving)
         {
             transform.position = Vector3.MoveTowards(
@@ -64,14 +68,18 @@ public class AISnakeGreedyController : MonoBehaviour
             return;
         }
 
-        //delay between
+        if (currentCell == MazeGenerator.Instance.goalCell)
+        {
+            reachedGoal = true;
+            return;
+        }
+
         stepTimer += Time.deltaTime;
         if (stepTimer < stepDelay) return;
         stepTimer = 0f;
 
         Vector2Int goal = MazeGenerator.Instance.goalCell;
 
-        
         Vector2Int[] dirs =
         {
             new Vector2Int(0, 1),
@@ -80,53 +88,55 @@ public class AISnakeGreedyController : MonoBehaviour
             new Vector2Int(-1, 0)
         };
 
-        Vector2Int bestCell = currentCell;
-        int bestDist = int.MaxValue;
-        bool foundBetter = false;
+        List<Vector2Int> unvisitedNeighbors = new List<Vector2Int>();
 
         foreach (Vector2Int dir in dirs)
         {
             Vector2Int candidate = currentCell + dir;
 
-            //skip walls no check
             if (!MazeGenerator.Instance.IsWalkable(candidate))
                 continue;
 
-            //avoid back into previous cell
-            if (candidate == lastCell)
+            if (visited.Contains(candidate))
                 continue;
 
-            //distance to goal
-            int dist = Mathf.Abs(candidate.x - goal.x) + Mathf.Abs(candidate.y - goal.y);
-
-            if (dist < bestDist)
-            {
-                bestDist = dist;
-                bestCell = candidate;
-                foundBetter = true;
-            }
+            unvisitedNeighbors.Add(candidate);
         }
 
-        //if nothing found go back
-        if (!foundBetter)
-        {
-            foreach (Vector2Int dir in dirs)
-            {
-                Vector2Int candidate = currentCell + dir;
+        Vector2Int nextCell = currentCell;
 
-                if (MazeGenerator.Instance.IsWalkable(candidate))
+        if (unvisitedNeighbors.Count > 0)
+        {
+            int bestDist = int.MaxValue;
+            foreach (var c in unvisitedNeighbors)
+            {
+                int dist = Mathf.Abs(c.x - goal.x) + Mathf.Abs(c.y - goal.y);
+                if (dist < bestDist)
                 {
-                    bestCell = candidate;
-                    break;
+                    bestDist = dist;
+                    nextCell = c;
                 }
             }
+
+            backtrackStack.Push(currentCell);
+        }
+        else
+        {
+            if (backtrackStack.Count > 0)
+            {
+                nextCell = backtrackStack.Pop();
+            }
+            else
+            {
+                initialized = false;
+                return;
+            }
         }
 
-        //move if possible
-        if (bestCell != currentCell)
+        if (nextCell != currentCell)
         {
-            lastCell = currentCell;
-            currentCell = bestCell;
+            currentCell = nextCell;
+            visited.Add(currentCell);
             targetPosition = MazeGenerator.Instance.CellToWorld(currentCell) + heightOffset;
             isMoving = true;
         }
