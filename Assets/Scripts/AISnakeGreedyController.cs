@@ -2,6 +2,8 @@
 using UnityEngine;
 
 //simple snake with memory
+//greedy failed but the class is still named this. might change it later but for now its a good reminder for the final talking points. 
+//greedy failed because it couldnt remember and would get stuck going back and forth. Same thing that was used for the sudoky solver with DFS and backtracking.
 public class AISnakeGreedyController : MonoBehaviour
 {
     public float moveSpeed = 4f;
